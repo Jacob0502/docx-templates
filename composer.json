@@ -1,0 +1,10 @@
+{
+  "name": "docx/templates-system",
+  "require": {
+    "php": "^7.4",
+    "phpoffice/phpword": "^0.18"
+  },
+  "autoload":{
+    "psr-4": {"App\\": "src/"}
+  }
+}

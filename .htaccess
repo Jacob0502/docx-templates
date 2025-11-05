@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# PHP routing fallback
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ index.php [L]
+
+# 禁止访问根目录敏感文件
+<FilesMatch "(config.php|db.json)">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
