@@ -22,7 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_template'])) {
 <html><head><meta charset="utf-8"><title>模板管理</title></head>
 <body>
 <h2>模板管理</h2>
-<form id="uploadForm" method="post" action="/public/upload.php" enctype="multipart/form-data">
+<form action="/public/upload.php" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="ui" value="1">
     <input type="file" name="template" accept=".docx">
     <button type="submit">上传</button>
 </form>
