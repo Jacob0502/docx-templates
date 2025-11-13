@@ -4,7 +4,6 @@ $config = include __DIR__ . '/../config.php';
 
 use App\Utils;
 use App\TemplateManager;
-use App\Auth;
 
 // UI 模式：当 ui=1 时，用简单 HTML 文本返回“上传成功/失败”
 $ui = isset($_REQUEST['ui']) && (string)$_REQUEST['ui'] === '1';
@@ -31,9 +30,6 @@ $fail = function (int $code, string $message, ?string $details = null) use ($ui,
 };
 
 try {
-    $auth = new Auth($config);
-    if (!$auth->check()) $fail(401, 'unauthorized');
-
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') $fail(405, 'method not allowed', 'only_post');
 
     if (empty($_FILES['template'])) $fail(400, 'bad request', 'no_file');
@@ -94,11 +90,9 @@ try {
     }
 } catch (\Throwable $e) {
     if ($ui) {
-        // 页面表单模式：隐藏细节，仅显示“上传失败”，同时记录日志
         App\Utils::logError('Upload exception: ' . $e->getMessage());
         $respondHtml(500, '上传失败');
     } else {
-        // API：统一异常处理为 JSON
         App\Utils::handleException($e);
     }
 }

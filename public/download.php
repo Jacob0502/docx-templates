@@ -2,56 +2,48 @@
 require __DIR__ . '/../vendor/autoload.php';
 $config = include __DIR__ . '/../config.php';
 
-use App\Auth;
 use App\Utils;
 use App\TemplateManager;
 
 try {
-    $auth = new Auth($config);
-    if (!$auth->check()) Utils::jsonError(401,'unauthorized');
-
-    // 仅允许通过“生成记录ID”访问
-    $id = $_GET['id'] ?? '';
-    if (!is_string($id) || $id === '') {
-        Utils::jsonError(400, 'bad request', 'missing_id');
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        Utils::jsonError(405, 'method not allowed', 'only_get');
     }
-    if (!preg_match('/^[A-Za-z0-9_.\-]{1,100}$/', $id)) {
-        Utils::jsonError(400, 'bad request', 'invalid_id');
+
+    $id = $_GET['id'] ?? '';
+    if ($id === '') {
+        Utils::jsonError(400, 'bad request', 'missing_id');
     }
 
     $tm = new TemplateManager($config);
     $gen = $tm->getGeneration($id);
     if (!$gen) {
-        Utils::jsonError(404, 'not found');
-    }
-    $storedName = $gen['storedName'] ?? null;
-    if (!$storedName) {
-        Utils::jsonError(404, 'not found');
+        Utils::jsonError(404, 'not found', 'generation_not_found');
     }
 
-    $path = Utils::joinPaths($config['output_dir'], $storedName);
-    if (!is_file($path)) {
-        Utils::jsonError(404, 'not found');
+    $stored = $gen['storedName'] ?? null;
+    if (!$stored) {
+        Utils::jsonError(404, 'not found', 'file_missing');
     }
 
-    $downloadName = $gen['downloadName'] ?? ('output_' . $id . '.docx');
-    $size = filesize($path);
-    if ($size === false) {
-        Utils::logError("filesize failed");
-        Utils::jsonError(500, 'internal error');
+    $filePath = Utils::joinPaths($config['output_dir'], $stored);
+    if (!is_file($filePath)) {
+        Utils::jsonError(404, 'not found', 'file_missing');
     }
 
-    Utils::sendStrictDownloadHeaders($downloadName, (int)$size);
+    $fsize = filesize($filePath);
+    $downloadName = $gen['downloadName'] ?? basename($filePath);
 
-    $fp = fopen($path, 'rb');
-    if ($fp === false) {
-        Utils::logError("fopen failed");
-        Utils::jsonError(500, 'internal error');
+    Utils::sendStrictDownloadHeaders($downloadName, $fsize);
+
+    $fh = fopen($filePath, 'rb');
+    if ($fh === false) {
+        Utils::jsonError(500, 'internal error', 'open_failed');
     }
-    while (!feof($fp)) {
-        echo fread($fp, 8192);
+    while (!feof($fh)) {
+        echo fread($fh, 8192);
     }
-    fclose($fp);
+    fclose($fh);
     exit;
 } catch (\Throwable $e) {
     App\Utils::handleException($e);
